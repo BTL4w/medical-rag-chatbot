@@ -105,6 +105,27 @@ class PineconeStore(VectorStore):
         self.client = Pinecone(api_key=api_key)
         self.index = self.client.Index(index_name)
         self.index_name = index_name
+    def _pinecone_metadata(self, chunk: Chunk) -> dict:
+        m = chunk.metadata or {}
+
+        meta = {
+            "source": "youmed",
+            "url": m.get("url"),
+            "title": m.get("title"),
+            "author": m.get("author"),
+            "category": m.get("category"),
+            "keyword": m.get("keyword"),
+            "section": chunk.section,
+            "subsection": chunk.subsection,
+            "publish_date": str(m.get("publish_date")) if m.get("publish_date") else None,
+            "crawl_timestamp": str(m.get("crawl_timestamp")) if m.get("crawl_timestamp") else None,
+        }
+
+        # loại bỏ None + list rỗng
+        return {
+            k: v for k, v in meta.items()
+            if v is not None and v != []
+        }
 
     def create_collection(self, name: str, dimension: int) -> None:
         if name not in self.client.list_indexes().names():
@@ -128,11 +149,8 @@ class PineconeStore(VectorStore):
                     chunk.chunk_id,
                     embedding.tolist(),
                     {
-                        # "original_content": chunk.original_content,
                         "enriched_content": chunk.enriched_content,
-                        "metadata": chunk.metadata,
-                        "section": chunk.section,
-                        "subsection": chunk.subsection,
+                        **self._pinecone_metadata(chunk),
                     },
                 )
             )
