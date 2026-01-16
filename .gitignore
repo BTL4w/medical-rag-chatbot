@@ -3,6 +3,11 @@
 
 # Data folder
 data/
-
+models/
+notebooks/models/
 # Markdown files
 *.md
+
+
+
+.env

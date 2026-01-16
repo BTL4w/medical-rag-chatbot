@@ -11,12 +11,15 @@ qdrant-client==1.7.0
 pinecone-client==2.2.4
 
 # ML & AI
-transformers==4.36.0
-onnxruntime==1.16.3
-optimum==1.16.0
+transformers==4.38.2
+onnx==1.15.0
+onnxruntime==1.17.1
+onnxscript==0.1.0
+optimum[onnxruntime]==1.17.1
 sentence-transformers==2.2.2
 rank-bm25==0.2.2
 openai==1.6.1
+huggingface_hub==0.20.3
 
 # NLP
 langchain==0.1.0
@@ -32,4 +35,5 @@ python-dotenv==1.0.0
 python-multipart==0.0.6
 bcrypt==4.1.2
 PyYAML==6.0.1
-numpy==1.24.3
+numpy==1.26.4
+# Note: numpy version updated for onnxruntime>=1.17 compatibility
