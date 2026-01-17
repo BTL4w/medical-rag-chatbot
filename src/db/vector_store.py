@@ -182,11 +182,14 @@ class PineconeStore(VectorStore):
         self.index.upsert(vectors=vectors)
 
     def _chunk_from_metadata(self, metadata: Dict, chunk_id: str) -> Chunk:
+        meta = metadata.get("metadata") if isinstance(metadata.get("metadata"), dict) else metadata
+        meta = dict(meta) if meta else {}
+        meta.pop("enriched_content", None)
         return Chunk(
             chunk_id=chunk_id,
             enriched_content=metadata.get("enriched_content", ""),
             # original_content=metadata.get("original_content", ""),
-            metadata=metadata.get("metadata", {}),
+            metadata=meta,
             section=metadata.get("section"),
             subsection=metadata.get("subsection"),
         )
