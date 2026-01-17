@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
+from dataclasses import asdict
+import pickle
 
 import numpy as np
 import sys
@@ -36,6 +38,40 @@ class BM25Retriever:
 
     def score(self, query: str) -> np.ndarray:
         return self.bm25.get_scores(query.split())
+
+    def save(self, path: str) -> None:
+        payload = {
+            "chunks": [asdict(chunk) for chunk in self.chunks],
+        }
+        with open(path, "wb") as f:
+            pickle.dump(payload, f)
+
+    @classmethod
+    def load(cls, path: str) -> "BM25Retriever":
+        with open(path, "rb") as f:
+            try:
+                payload = pickle.load(f)
+            except ModuleNotFoundError as exc:
+                raise ValueError(
+                    "BM25 index was saved with an older pickle format. "
+                    "Please rebuild the index using BM25Retriever.save()."
+                ) from exc
+        if isinstance(payload, cls):
+            return payload
+        if isinstance(payload, dict) and "chunks" in payload:
+            chunks = [
+                Chunk(
+                    chunk_id=item.get("chunk_id"),
+                    enriched_content=item.get("enriched_content", ""),
+                    original_content=item.get("original_content", ""),
+                    metadata=item.get("metadata", {}),
+                    section=item.get("section"),
+                    subsection=item.get("subsection"),
+                )
+                for item in payload["chunks"]
+            ]
+            return cls(chunks)
+        raise ValueError("Unsupported BM25 index format. Please rebuild the index.")
 
 
 class HybridRetriever:
