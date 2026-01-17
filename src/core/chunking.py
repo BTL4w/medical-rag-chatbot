@@ -4,7 +4,10 @@ import json
 import uuid
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+import sys
+import os
 
+sys.path.append(os.path.abspath('../src'))
 try:
     from langchain.text_splitter import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 except Exception:  # pragma: no cover - optional dependency
@@ -16,8 +19,8 @@ except Exception:  # pragma: no cover - optional dependency
 class Chunk:
     chunk_id: str
     enriched_content: str
-    original_content: str
-    metadata: Dict
+    original_content: Optional[str] = None
+    metadata: Optional[Dict] = None
     section: Optional[str] = None
     subsection: Optional[str] = None
 

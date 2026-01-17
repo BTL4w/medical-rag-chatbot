@@ -3,16 +3,20 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import sys
+import os
+
+sys.path.append(os.path.abspath('../src'))
 
 try:
     from rank_bm25 import BM25Okapi
 except Exception:  # pragma: no cover - optional dependency
     BM25Okapi = None
 
-from src.core.chunking import Chunk
-from src.core.embedding import ONNXEmbedding
-from src.core.reranker import ONNXReranker
-from src.db.vector_store import VectorStore
+from core.chunking import Chunk
+from core.embedding import ONNXEmbedding
+from core.reranker import ONNXReranker
+from db.vector_store import VectorStore
 
 
 class BM25Retriever:
@@ -101,7 +105,7 @@ class HybridRetriever:
             combined[chunk_id]["score"] += bm25_weight * score
 
         ranked = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
-        candidates = [item["chunk"].original_content for item in ranked[: self.candidates]]
+        candidates = [item["chunk"] for item in ranked[: self.candidates]]
         chunks = [item["chunk"] for item in ranked[: self.candidates]]
 
         if self.reranker is None:

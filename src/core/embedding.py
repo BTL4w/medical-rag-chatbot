@@ -3,7 +3,10 @@ from __future__ import annotations
 from typing import Iterable, List
 
 import numpy as np
+import os
+import sys
 
+sys.path.append(os.path.abspath('../src'))
 try:
     import onnxruntime as ort
     from transformers import AutoTokenizer
@@ -16,8 +19,18 @@ class ONNXEmbedding:
     def __init__(self, model_path: str = "models/bge-m3-onnx") -> None:
         if AutoTokenizer is None or ort is None:
             raise ImportError("onnxruntime and transformers are required for ONNXEmbedding")
+
         self.tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-m3")
-        self.session = ort.InferenceSession(model_path)
+
+        model_file = os.path.join(model_path, "model.onnx")
+        if not os.path.exists(model_file):
+            raise FileNotFoundError(f"model.onnx not found in {model_path}")
+
+        self.session = ort.InferenceSession(
+            model_file,
+            providers=["CPUExecutionProvider"]
+        )
+
         self.output_name = self.session.get_outputs()[0].name
 
     def _mean_pooling(self, model_output: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
@@ -36,7 +49,10 @@ class ONNXEmbedding:
             truncation=True,
             return_tensors="np",
         )
-        ort_inputs = {k: v for k, v in inputs.items()}
+        ort_inputs = {
+            "input_ids": inputs["input_ids"].astype(np.int64),
+            "attention_mask": inputs["attention_mask"].astype(np.int64),
+        }
         outputs = self.session.run([self.output_name], ort_inputs)[0]
         pooled = self._mean_pooling(outputs, inputs["attention_mask"])
         norms = np.linalg.norm(pooled, axis=1, keepdims=True)

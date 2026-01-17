@@ -2,19 +2,24 @@ from __future__ import annotations
 
 import json
 from typing import Dict, List, Optional
+import sys
+import os
 
+sys.path.append(os.path.abspath('../src'))
 import yaml
-
+from pathlib import Path
 try:
     from openai import OpenAI
 except Exception:  # pragma: no cover - optional dependency
     OpenAI = None
 
-from src.core.chunking import Chunk
+from core.chunking import Chunk
 
 
 def load_prompts(path: str) -> Dict[str, str]:
-    with open(path, "r", encoding="utf-8") as f:
+    base_dir = Path(__file__).resolve().parents[2]  # project root
+    full_path = base_dir / path
+    with open(full_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data or {}
 
@@ -39,7 +44,7 @@ class MedicalRAGGenerator:
 
     def _format_context(self, retrieved_chunks: List[Chunk]) -> str:
         return "\n\n".join(
-            f"[Nguon {i + 1}: {chunk.metadata.get('title', '')}]\n{chunk.original_content}"
+            f"[Nguon {i + 1}]\n{chunk.enriched_content}"
             for i, chunk in enumerate(retrieved_chunks)
         )
 

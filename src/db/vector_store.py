@@ -4,8 +4,11 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 import numpy as np
+import sys
+import os
 
-from src.core.chunking import Chunk
+sys.path.append(os.path.abspath('../src'))
+from core.chunking import Chunk
 
 
 class VectorStore(ABC):
@@ -178,10 +181,19 @@ class PineconeStore(VectorStore):
             include_metadata=True,
             filter=filter,
         )
+
         output = []
         for match in results.get("matches", []):
-            chunk = self._chunk_from_metadata(match.get("metadata", {}), match.get("id"))
-            output.append({"chunk": chunk, "score": float(match.get("score", 0.0))})
+            chunk = self._chunk_from_metadata(
+                match.get("metadata", {}),
+                match.get("id"),
+            )
+            output.append(
+                {
+                    "chunk": chunk,
+                    "score": float(match.get("score", 0.0)),
+                }
+            )
         return output
 
 
