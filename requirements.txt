@@ -18,8 +18,10 @@ onnxscript==0.1.0
 optimum[onnxruntime]==1.17.1
 sentence-transformers==2.2.2
 rank-bm25==0.2.2
-openai==1.6.1
+openai==2.15.0
+httpx
 huggingface_hub==0.20.3
+
 
 # NLP
 langchain==0.1.0

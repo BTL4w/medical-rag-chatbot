@@ -100,14 +100,31 @@ class QdrantStore(VectorStore):
 
 
 class PineconeStore(VectorStore):
-    def __init__(self, api_key: str, index_name: str = "youmed-articles") -> None:
+    def __init__(
+        self,
+        api_key: str,
+        index_name: str = "youmed-articles",
+        environment: Optional[str] = None,
+    ) -> None:
+        self.index_name = index_name
+        self._environment = environment
         try:
             from pinecone import Pinecone
-        except Exception as exc:  # pragma: no cover - optional dependency
-            raise ImportError("pinecone-client is required for PineconeStore") from exc
-        self.client = Pinecone(api_key=api_key)
-        self.index = self.client.Index(index_name)
-        self.index_name = index_name
+
+            self.client = Pinecone(api_key=api_key)
+            self.index = self.client.Index(index_name)
+            self._legacy = False
+        except Exception:
+            try:
+                import pinecone
+            except Exception as exc:  # pragma: no cover - optional dependency
+                raise ImportError("pinecone-client is required for PineconeStore") from exc
+            if not environment:
+                raise ValueError("PINECONE_ENV is required for legacy pinecone client")
+            pinecone.init(api_key=api_key, environment=environment)
+            self.client = pinecone
+            self.index = pinecone.Index(index_name)
+            self._legacy = True
     def _pinecone_metadata(self, chunk: Chunk) -> dict:
         m = chunk.metadata or {}
 
@@ -131,6 +148,11 @@ class PineconeStore(VectorStore):
         }
 
     def create_collection(self, name: str, dimension: int) -> None:
+        if self._legacy:
+            existing = self.client.list_indexes()
+            if name not in existing:
+                self.client.create_index(name=name, dimension=dimension, metric="cosine")
+            return
         if name not in self.client.list_indexes().names():
             from pinecone import ServerlessSpec
 
@@ -140,8 +162,8 @@ class PineconeStore(VectorStore):
                 metric="cosine",
                 spec=ServerlessSpec(
                     cloud="aws",
-                    region="us-east-1"
-                )
+                    region=self._environment or "us-east-1",
+                ),
             )
 
     def upsert(self, chunks: List[Chunk], embeddings: np.ndarray) -> None:
